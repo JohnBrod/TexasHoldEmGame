@@ -1,6 +1,7 @@
 namespace Poker.TexasHoldEm
 
 module Dealing = 
+
     open System
 
     type Suit = Hearts | Clubs | Spades | Diamonds

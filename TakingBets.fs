@@ -37,7 +37,6 @@ module TakingBets =
         | { played = []; playing = p::[]; minimumStake = 0 } -> false  // all fold
         | { playing = p::ps; minimumStake = ms } -> ms <> p  // all paid
         | _ -> true
-        // big blind option???
 
     let play action betting = 
         match action, betting with 
