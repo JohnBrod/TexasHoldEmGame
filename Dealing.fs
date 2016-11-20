@@ -7,8 +7,8 @@ module Dealing =
     type Suit = Hearts | Clubs | Spades | Diamonds
     type Rank = Two | Three | Four | Five | Six | Seven | Eight | Nine | Ten | Jack | Queen | King | Ace
     type Card = Rank * Suit
-    type DealStage = Hole | Flop | Turn | River
-    type Cards = { hole : (Card * Card) list; flop : (Card * Card * Card); turn : Card; river : Card; Stage : DealStage }
+    type Stage = Hole | Flop | Turn | River
+    type Cards = { flop : (Card * Card * Card); turn : Card; river : Card }
 
     let newDeck = 
         [(Two, Spades); (Three, Spades); (Four, Spades); (Five, Spades);
@@ -34,18 +34,15 @@ module Dealing =
         let flop = cards |> List.skip (players * 2) |> List.take 3 
         let turn = cards |> List.skip ((players * 2) + 3) |> List.take 1
         let river = cards |> List.skip ((players * 2) + 3 + 1) |> List.take 1
-        {
-            hole = hole |> List.map (fun c -> (c.[0], c.[1]))
+        let communityCards = {
             flop = (flop.[0], flop.[1], flop.[2])
             turn = turn.[0]
             river = river.[0]
-            Stage = Hole
         }
+        (hole |> List.map (fun c -> (c.[0], c.[1])), communityCards, Hole)
 
-    let dealing { Stage = s } = s < River
-
-    let nextStage cards = 
-        match cards with
-        | { hole = h; flop = f; turn = t; river = r; Stage = Hole } -> { hole = h; flop = f; turn = t; river = r; Stage = Flop }
-        | { hole = h; flop = f; turn = t; river = r; Stage = Flop } -> { hole = h; flop = f; turn = t; river = r; Stage = Turn }
-        | { hole = h; flop = f; turn = t; river = r; Stage = Turn } -> { hole = h; flop = f; turn = t; river = r; Stage = River }
+    let nextStage stage = 
+        match stage with
+        | Hole -> Flop 
+        | Flop -> Turn 
+        | Turn -> River
