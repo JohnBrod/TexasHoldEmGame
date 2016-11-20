@@ -1,53 +1,51 @@
-open System
-open Poker.TexasHoldEm.Dealing
-open Poker.TexasHoldEm.TakingBets
+namespace Poker.TexasHoldEm
 
-type Game = { players : string list; bets : Betting; holeCards : (Card * Card) list; communityCards : Cards; stage : Stage }
+module Game = 
 
-let tournamentOver cs = cs |> List.max = 4000
+    open System
+    open Poker.TexasHoldEm.Dealing
+    open Poker.TexasHoldEm.TakingBets
 
-let setup players = players 
-                    |> Array.toList
+    type Game = { players : string list; bets : Betting; holeCards : (Card * Card) list; communityCards : Cards; stage : Stage; messages : string list }
 
-let startGame players = 
-    let (hole, community, stage) = deal (List.length players)
-    { 
-        players = players; 
-        bets = startBetting (List.length players) 1000;
-        holeCards = hole; 
-        communityCards = community;
-        stage = stage
-    }
+    let tournamentOver cs = cs |> List.max = 4000
 
-let rec gameLoop game = 
-    printfn "%A" game
-    let action = Int32.Parse(Console.ReadLine())
-    let bets = play action game.bets
+    let setup players = players 
+                        |> Array.toList
 
-    if tournamentOver ((game.bets.played @ game.bets.playing) |> List.map (fun (_,c) -> c))
-    then printfn "announce winner"
-    else if game.stage = River && finished bets
-    then printfn "xx wins hand"
-    else printfn "xx to bet"
+    let startGame players = 
+        let (hole, community, stage) = deal (List.length players)
+        { 
+            players = players; 
+            bets = startBetting (List.length players) 1000;
+            holeCards = hole; 
+            communityCards = community;
+            stage = stage;
+            messages = ["blinds etc, xxx to bet"]
+        }
 
-    if game.stage < River && finished bets
-    then gameLoop { game with bets = restartBetting bets; stage = nextStage game.stage }
-    else if game.stage = River && finished bets
-    then gameLoop (startGame game.players)
-    else gameLoop { game with bets = bets }
+    let next game action = 
 
-[<EntryPoint>]
-let main players =
-    gameLoop (startGame (setup players))
-    0
+        let bets = play action game.bets
+
+        if tournamentOver ((game.bets.played @ game.bets.playing) |> List.map (fun (_,c) -> c))
+        then { game with messages = ["winner is ..."] }
+        else if game.stage < River && finished bets
+        then { game with bets = restartBetting bets; stage = nextStage game.stage; messages = ["xx to bet"] }
+        else if game.stage = River && finished bets
+        then { startGame game.players with messages = ["xx wins hand";"xx to bet"] }
+        else { game with bets = bets; messages = ["xx to bet"] }
+
 
 // todo: 
-// betting reduces chips
 // end of hand
+//      create hands
+//      hand comparison
+//          compare player hands to get best for player
+//          compare best to other players
 //      winner
 //      divvy pot
-// link players to cards
 // blinds
-// card comparison
-// big blind option
-// 
+//      big blind option
+// split game into another file
+//      return messages with the next play (e.g. bet john, min 100; )
