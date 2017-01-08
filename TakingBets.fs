@@ -2,7 +2,7 @@ namespace Poker.TexasHoldEm
 
 module TakingBets = 
 
-    type Betting = { played : (int * int) list; playing : (int * int) list; minimumStake : int }
+    type Betting = { played : (string * int * int) list; playing : (string * int * int) list; minimumStake : int }
 
     let fold betting = 
         match betting with
@@ -18,24 +18,24 @@ module TakingBets =
 
     let call action betting = 
         match betting with
-        | { played = pd; playing = (b, c)::[] } -> { played = []; playing = pd @ [(b + action, c - action)]; minimumStake = b + action }
-        | { played = pd; playing = (b, c)::ps } -> { played = pd @ [(b + action, c - action)]; playing = ps; minimumStake = b + action }
+        | { played = pd; playing = (n, b, c)::[] } -> { played = []; playing = pd @ [(n, b + action, c - action)]; minimumStake = b + action }
+        | { played = pd; playing = (n, b, c)::ps } -> { played = pd @ [(n, b + action, c - action)]; playing = ps; minimumStake = b + action }
         | { playing = [] } -> betting
 
     let raise action betting = 
         match betting with
-        | { played = pd; playing = (b, c)::[] } -> { played = []; playing = pd @ [(b + action, c - action)]; minimumStake = b + action }
-        | { played = pd; playing = (b, c)::ps } -> { played = pd @ [(b + action, c - action)]; playing = ps; minimumStake = b + action }
+        | { played = pd; playing = (n, b, c)::[] } -> { played = []; playing = pd @ [(n, b + action, c - action)]; minimumStake = b + action }
+        | { played = pd; playing = (n, b, c)::ps } -> { played = pd @ [(n, b + action, c - action)]; playing = ps; minimumStake = b + action }
         | { playing = [] } -> betting
 
-    let (|Fold|Check|Call|Raise|) (action, { playing = (b, c)::_; minimumStake = ms }) = 
+    let (|Fold|Check|Call|Raise|) (action, { playing = (n, b, c)::_; minimumStake = ms }) = 
         if action + b < ms then Fold else if action = 0 then Check else if action + b = ms then Call else Raise
 
     let finished bets = 
         match bets with
         | { playing = []; minimumStake = 0 } -> true   // all check
         | { played = []; playing = p::[]; minimumStake = 0 } -> true  // all fold
-        | { playing = (b, c)::ps; minimumStake = ms } -> ms = b && b > 0 // all paid
+        | { playing = (n, b, c)::ps; minimumStake = ms } -> ms = b && b > 0 // all paid
         | _ -> false
 
     let play action betting = 
@@ -48,5 +48,5 @@ module TakingBets =
     let restartBetting { played = pd; playing = ps; } =
         { played = []; playing = pd @ ps; minimumStake = 0 }
 
-    let startBetting numPlayers chips =
-        { played = []; playing = List.init numPlayers (fun _ -> (0, chips)); minimumStake = 0 }
+    let startBetting players chips =
+        { played = []; playing = players |> List.map (fun n -> (n, 0, chips)); minimumStake = 0 }

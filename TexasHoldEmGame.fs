@@ -6,35 +6,44 @@ module Game =
     open Poker.TexasHoldEm.Dealing
     open Poker.TexasHoldEm.TakingBets
 
-    type Game = { players : string list; bets : Betting; holeCards : (Card * Card) list; communityCards : Cards; stage : Stage; messages : string list }
+    type Game = { players : Betting; holeCards : (Card * Card) list; communityCards : Cards; stage : Stage; messages : string list }
 
     let tournamentOver cs = cs |> List.max = 4000
 
-    let setup players = players 
-                        |> Array.toList
+    let message players = 
+        match players with
+        | { played = pd; playing = (n,_,_)::rest; minimumStake = ms } -> [n + " to bet, min " + string(ms)]
+        | _ -> ["error"]
 
-    let startGame players = 
-        let (hole, community, stage) = deal (List.length players)
+    let handMessage players = 
+        match players with
+        | { played = (n,_,_)::rest } -> [n + " wins the hand"; n + " to start betting"]
+        | _ -> ["error"]
+
+    let startHand players = 
+        let (hole, community, stage) = deal (List.length players.playing)
         { 
-            players = players; 
-            bets = startBetting (List.length players) 1000;
+            players = restartBetting players;
             holeCards = hole; 
             communityCards = community;
             stage = stage;
-            messages = ["blinds etc, xxx to bet"]
+            messages = message players
         }
+
+    let startGame players = 
+        startHand (startBetting players 1000)
 
     let next game action = 
 
-        let bets = play action game.bets
+        let players = play action game.players
 
-        if tournamentOver ((game.bets.played @ game.bets.playing) |> List.map (fun (_,c) -> c))
+        if tournamentOver ((game.players.played @ game.players.playing) |> List.map (fun (_,_,c) -> c))
         then { game with messages = ["winner is ..."] }
-        else if game.stage < River && finished bets
-        then { game with bets = restartBetting bets; stage = nextStage game.stage; messages = ["xx to bet"] }
-        else if game.stage = River && finished bets
-        then { startGame game.players with messages = ["xx wins hand";"xx to bet"] }
-        else { game with bets = bets; messages = ["xx to bet"] }
+        else if game.stage < River && finished players
+        then { game with players = restartBetting players; stage = nextStage game.stage; messages = message players }
+        else if game.stage = River && finished players
+        then { startHand game.players with messages = handMessage players }
+        else { game with players = players; messages = message players }
 
 
 // todo: 
@@ -47,5 +56,4 @@ module Game =
 //      divvy pot
 // blinds
 //      big blind option
-// split game into another file
-//      return messages with the next play (e.g. bet john, min 100; )
+// fold
